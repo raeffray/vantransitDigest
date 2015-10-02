@@ -10,6 +10,7 @@ import java.util.Set;
 
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.commons.lang3.text.WordUtils;
+import org.apache.log4j.Logger;
 
 import com.raeffray.raw.data.RawData;
 
@@ -22,6 +23,8 @@ import com.raeffray.raw.data.RawData;
 public class ReflectionData {
 
 	private static ReflectionData instance = null;
+
+	static Logger logger = Logger.getLogger(ReflectionData.class);
 
 	protected ReflectionData() {
 
@@ -49,47 +52,29 @@ public class ReflectionData {
 	}
 
 	public <T> List<T> buildList(Class<?> clazz,
-			List<Map<String, String>> entries) {
+			List<Map<String, String>> entries) throws Exception {
 
 		List<T> list = new ArrayList<T>();
 
-		try {
+		Method[] methods = clazz.getMethods();
 
-			Method[] methods = clazz.getMethods();
+		for (Map<String, String> fields : entries) {
 
-			for (Map<String, String> fields : entries) {
+			Set<String> keySet = fields.keySet();
 
-				Set<String> keySet = fields.keySet();
-				
-				T object = (T) clazz.newInstance();
-				
-				for (String field : keySet) {
+			T object = (T) clazz.newInstance();
 
-					String value = fields.get(field);
+			for (String field : keySet) {
 
-					Method publicMethod = getMethod(methods,
-							"set" + WordUtils.capitalize(field));
+				String value = fields.get(field);
 
-					publicMethod.invoke(object, value);
-				}
-				
-				list.add(object);
+				Method publicMethod = getMethod(methods,
+						"set" + WordUtils.capitalize(field));
+
+				publicMethod.invoke(object, value);
 			}
-		} catch (SecurityException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InstantiationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InvocationTargetException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+
+			list.add(object);
 		}
 
 		return list;
