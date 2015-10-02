@@ -2,7 +2,10 @@ package com.raeffray.csv;
 
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,8 +31,16 @@ public class CSVReader {
 				.getString("csv.path");
 
 		try {
-
-			Reader in = new FileReader(csvPath);
+			
+			InputStream stream = getClass().getResourceAsStream(csvPath);
+			
+			Reader in;
+			
+			if(stream != null){
+				in = new InputStreamReader(stream);
+			}else{
+				in = new FileReader(csvPath);
+			}
 
 			String[] fieldsNames = ReflectionData.getInstance()
 					.extractFieldsNames(clazz);
