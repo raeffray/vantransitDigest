@@ -1,25 +1,38 @@
 package com.raeffray.raw.data;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class Stops implements RawData {
 
+	@JsonProperty("stopId")
 	private String stop_id; 
 	
+	@JsonProperty("code")
 	private String stop_code;
 	
+	@JsonProperty("name")
 	private String stop_name;
 	
+	@JsonProperty("description")
 	private String stop_desc;
 	
+	@JsonProperty("latitude")
 	private String stop_lat;
 	
+	@JsonProperty("longitude")
 	private String stop_lon;
 	
+	@JsonProperty("agencyId")
 	private String zone_id;
 	
+	@JsonProperty("url")
 	private String stop_url;
 	
+	@JsonProperty("type")
 	private String location_type;
 	
+	@JsonIgnore
 	private String parent_station;
 
 	public String getStop_id() {

@@ -1,15 +1,22 @@
 package com.raeffray.raw.data;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class Agency implements RawData {
 	
+	@JsonProperty("agencyId")
 	private String agency_id; 
 	
+	@JsonProperty("name")
 	private String agency_name;
 	
+	@JsonProperty("url")
 	private String agency_url;
 	
+	@JsonProperty("timeZone")
 	private String agency_timezone; 
 	
+	@JsonProperty("locale")
 	private String agency_lang;
 
 	public String getAgency_id() {

@@ -1,30 +1,43 @@
 package com.raeffray.raw.data;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * This class represents a Bus Route
  *  
  *  @author Renato Barbosa
  *  
  * */
+
 public class Routes implements RawData{
 	
-	// it's not a camelCase to follow the original CSV from google/Transit
+	@JsonProperty("routeId")
 	private String route_id;
 	
+	@JsonIgnore
+	// ids as foreign keys will be ignored
 	private String agency_id;
-	
+
+	@JsonProperty("code")
 	private String route_short_name;
 	
+	@JsonProperty("longName")
 	private String route_long_name;
 	
+	@JsonProperty("description")
 	private String route_desc;
 	
+	@JsonProperty("type")
 	private String route_type;
 	
+	@JsonProperty("url")
 	private String route_url;
 	
+	@JsonIgnore
 	private String route_color;
 	
+	@JsonIgnore
 	private String route_text_color;
 
 	public String getRoute_id() {

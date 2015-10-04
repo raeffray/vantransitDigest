@@ -1,21 +1,32 @@
 package com.raeffray.raw.data;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class Trips implements RawData {
 	
+	@JsonIgnore
 	private String route_id;
 	
+	@JsonIgnore
 	private String service_id;
 	
+	@JsonProperty("agencyId")
 	private String trip_id;
 	
+	@JsonProperty("headsign")
 	private String trip_headsign;
 	
+	@JsonProperty("shortName")
 	private String trip_short_name;
 	
+	@JsonProperty("directionId")
 	private String direction_id;
 	
+	@JsonProperty("blockId")
 	private String block_id;
 	
+	@JsonIgnore
 	private String shape_id;
 
 	public String getRoute_id() {
