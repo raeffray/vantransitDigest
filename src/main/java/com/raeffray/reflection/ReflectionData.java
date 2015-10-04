@@ -1,4 +1,4 @@
-package com.raeffray.raw.instrospection;
+package com.raeffray.reflection;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;

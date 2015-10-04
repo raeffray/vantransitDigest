@@ -1,4 +1,4 @@
-package com.raeffray.raw.instrospection;
+package com.raeffray.reflection;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;

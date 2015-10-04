@@ -13,4 +13,13 @@ public class Configuration {
 		}
 		return null;
 	}
+	
+	public static PropertiesConfiguration getConfiguration(){
+		try {
+			return new PropertiesConfiguration("system.properties");
+		} catch (ConfigurationException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
 }
