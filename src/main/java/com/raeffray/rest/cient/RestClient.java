@@ -5,6 +5,7 @@ import java.text.MessageFormat;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
@@ -36,67 +37,67 @@ public class RestClient {
 	}
 
 	public JSONObject fetchNodeById(int nodeId) throws Exception {
-		
+
 		String uri = MessageFormat.format(
 				GraphResourceCatalog.NODE_FETCH.getResource(), nodeId);
 		String authKey = Configuration.getConfiguration().getString(
 				"authorization.key");
-		
+
 		WebResource webResource = client.resource(graphUrl + uri);
 		WebResource.Builder builder = webResource.accept(
 				MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION,
 				authKey);
-		
+
 		ClientResponse response = builder.get(ClientResponse.class);
-		
+
 		if (response.getStatus() != 200) {
 			throw new RuntimeException("Failed : HTTP error code : "
 					+ response.getStatus());
 		}
-		
+
 		return (JSONObject) new JSONParser().parse(response
 				.getEntity(String.class));
 
 	}
 
-	public JSONObject executeBatchOperation(BatchOperationRequest request) throws Exception {
-		
+	public JSONArray executeBatchOperation(BatchOperationRequest request)
+			throws Exception {
+
 		String uri = GraphResourceCatalog.BATCH_OPERATION.getResource();
 		String authKey = Configuration.getConfiguration().getString(
 				"authorization.key");
-		
+
 		WebResource webResource = client.resource(graphUrl + uri);
+				
 		WebResource.Builder builder = webResource.accept(
 				MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION,
 				authKey);
 		
-		ClientResponse response = builder.post(ClientResponse.class);
-		
+
+		ClientResponse response = builder.post(ClientResponse.class, request.parseJson());
+
 		if (response.getStatus() != 200) {
 			throw new RuntimeException("Failed : HTTP error code : "
 					+ response.getStatus());
 		}
-		
-		return (JSONObject) new JSONParser().parse(response
+
+		return (JSONArray) new JSONParser().parse(response
 				.getEntity(String.class));
 
 	}
 
-	public void fetchNodes(Integer... nodes) {
+	public JSONArray fetchNodes(Integer... nodes) throws Exception {
 
 		BatchOperationRequest request = new BatchOperationRequest();
-
+		
 		for (int i = 0; i < nodes.length; i++) {
 			Integer node = nodes[i];
-			request.createOperation(0, GraphResourceCatalog.NODE_FETCH
+			request.addOperation(0, GraphResourceCatalog.BATCH_OPERATION_NODE_FETCH
 					.getHttpMethod(), MessageFormat.format(
-					GraphResourceCatalog.NODE_FETCH.getResource(), node), "");
+					GraphResourceCatalog.BATCH_OPERATION_NODE_FETCH.getResource(), node), null);
 		}
 		
-		//TODO call batch method above...
-		// put this guy into the request..
-
-
+		return executeBatchOperation(request);
 	}
 
 }

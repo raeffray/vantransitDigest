@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
@@ -21,13 +23,14 @@ public class BatchOperationRequest implements Serializable {
 		this.operations = operations;
 	}
 
-	private void addOperations(Operation operation) {
+	private void addOperation(Operation operation) {
 		if (operations == null) {
 			operations = new ArrayList<BatchOperationRequest.Operation>();
 		}
 		operations.add(operation);
 	}
 
+	@JsonInclude(Include.NON_NULL)
 	class Operation {
 
 		private int id;
@@ -64,12 +67,12 @@ public class BatchOperationRequest implements Serializable {
 
 	}
 
-	public void createOperation(int id, String method, String reosurce, String body) {
-		this.addOperations(new Operation(id, method, reosurce, body));	
+	public void addOperation(int id, String method, String reosurce, String body) {
+		this.addOperation(new Operation(id, method, reosurce, body));	
 	}
 	
 	public String parseJson() throws Exception{
-		ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
+		ObjectWriter ow = new ObjectMapper().writer();
 		return ow.writeValueAsString(this.getOperations());
 	}
 
