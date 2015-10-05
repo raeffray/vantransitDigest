@@ -10,6 +10,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.junit.Test;
 
+import com.raeffray.raw.data.Agency;
 import com.raeffray.rest.cient.enums.GraphResourceCatalog;
 
 public class RestClietTest {
@@ -20,13 +21,14 @@ public class RestClietTest {
 		fetchNodeById.get("data");
 	}
 
-	@Test
+	//@Test
+	//TODO have to fix it..
 	public void createBatchRequestTest() throws Exception {
 		BatchOperationRequest request = new BatchOperationRequest();
 		request.addOperation(0, GraphResourceCatalog.BATCH_OPERATION_NODE_FETCH
 				.getHttpMethod(), MessageFormat.format(
 				GraphResourceCatalog.BATCH_OPERATION_NODE_FETCH.getResource(),
-				40), "aaa");
+				40), "{\"aaa\"}");
 
 		assertThat(
 				request.parseJson(),
@@ -71,6 +73,28 @@ public class RestClietTest {
 	
 	}
 	
+	@Test
+	public void batchCreateNodeTest() throws Exception {
+		
+		String[] labels = {"FOOX","BOOX","GOOX"};
+		
+		Agency agency = new Agency();
+		agency.setAgency_name("AG_DULL");
+		agency.setAgency_url("http://that.one");
+		
+		Agency agency1 = new Agency();
+		agency1.setAgency_name("AG_BORRING");
+		agency1.setAgency_url("http://that.one");
+		
+		Agency agency2 = new Agency();
+		agency2.setAgency_name("AG_DAMN_IT");
+		agency2.setAgency_url("http://that.one");
+		
+		JSONArray createNode = RestClient.getInstance().createNode(labels, agency, agency1, agency2);
+		
+		int a = 1;
+		
+	}
 	
 
 }

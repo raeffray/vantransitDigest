@@ -9,7 +9,10 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.raeffray.commons.Configuration;
+import com.raeffray.raw.data.RawData;
 import com.raeffray.rest.cient.enums.GraphResourceCatalog;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
@@ -68,13 +71,13 @@ public class RestClient {
 				"authorization.key");
 
 		WebResource webResource = client.resource(graphUrl + uri);
-				
+
 		WebResource.Builder builder = webResource.accept(
 				MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION,
 				authKey);
-		
 
-		ClientResponse response = builder.post(ClientResponse.class, request.parseJson());
+		ClientResponse response = builder.post(ClientResponse.class,
+				request.parseJson());
 
 		if (response.getStatus() != 200) {
 			throw new RuntimeException("Failed : HTTP error code : "
@@ -89,15 +92,55 @@ public class RestClient {
 	public JSONArray fetchNodes(Integer... nodes) throws Exception {
 
 		BatchOperationRequest request = new BatchOperationRequest();
-		
+
 		for (int i = 0; i < nodes.length; i++) {
 			Integer node = nodes[i];
-			request.addOperation(0, GraphResourceCatalog.BATCH_OPERATION_NODE_FETCH
-					.getHttpMethod(), MessageFormat.format(
-					GraphResourceCatalog.BATCH_OPERATION_NODE_FETCH.getResource(), node), null);
+			request.addOperation(0,
+					GraphResourceCatalog.BATCH_OPERATION_NODE_FETCH
+							.getHttpMethod(), MessageFormat.format(
+							GraphResourceCatalog.BATCH_OPERATION_NODE_FETCH
+									.getResource(), node), null);
 		}
-		
+
 		return executeBatchOperation(request);
+	}
+
+	public JSONArray createNode(String[] labels, RawData... rawDataList)
+			throws Exception {
+
+		BatchOperationRequest request = new BatchOperationRequest();
+
+		int countIds = -1;
+		int lastId = 0;
+
+		for (RawData rawData : rawDataList) {
+
+			String body = parseJson(rawData);
+			request.addOperation(++countIds,
+					GraphResourceCatalog.BATCH_OPERATION_NODE_CREATE
+							.getHttpMethod(),
+					GraphResourceCatalog.BATCH_OPERATION_NODE_CREATE
+							.getResource(), body);
+			lastId = countIds;
+			request.addOperation(++countIds,
+					GraphResourceCatalog.BATCH_OPERATION_LABEL_CREATE
+							.getHttpMethod(), MessageFormat.format(
+							GraphResourceCatalog.BATCH_OPERATION_LABEL_CREATE
+									.getResource(), "{" + lastId + "}"),
+					parseJsonSingleValue(labels));
+		}
+
+		return executeBatchOperation(request);
+	}
+
+	private String parseJson(RawData data) throws Exception {
+		ObjectWriter ow = new ObjectMapper().writer();
+		return ow.writeValueAsString(data);
+	}
+
+	private String parseJsonSingleValue(String[] values) throws Exception {
+		ObjectWriter ow = new ObjectMapper().writer();
+		return ow.writeValueAsString(values);
 	}
 
 }

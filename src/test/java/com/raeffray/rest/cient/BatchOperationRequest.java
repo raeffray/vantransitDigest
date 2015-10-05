@@ -6,6 +6,7 @@ import java.util.Collection;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonRawValue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
@@ -39,6 +40,7 @@ public class BatchOperationRequest implements Serializable {
 
 		private String to;
 
+		@JsonRawValue
 		private String body;
 
 		public int getId() {
