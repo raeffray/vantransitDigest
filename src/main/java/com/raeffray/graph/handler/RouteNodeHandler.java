@@ -65,8 +65,8 @@ public class RouteNodeHandler {
 		// List<Shapes> shapeList = ReflectionData.getInstance().buildList(
 		// Shapes.class, reader.readCSVForData(Shapes.class));
 
-		// List<Stops> stopList = ReflectionData.getInstance().buildList(
-		// Stops.class, reader.readCSVForData(Stops.class));
+		stopList = ReflectionData.getInstance().buildList(
+				Stops.class, reader.readCSVForData(Stops.class));
 
 		stopTimesList = ReflectionData.getInstance().buildList(StopTimes.class,
 				reader.readCSVForData(StopTimes.class));
@@ -166,21 +166,41 @@ public class RouteNodeHandler {
 			createSetCalendarDateNode(calendar.getService_id(), nodeFather);
 		}
 	}
-	
-	public void createSetStopTimesNode(String tripId, long tripNodeId) throws Exception {
+
+	public void createSetStopTimesNode(String tripId, long tripNodeId)
+			throws Exception {
 
 		List<RawData> stopsTimesFromTrip = findStopTimesByTripId(stopTimesList,
 				tripId);
-
+		
 		String[] childLabels = { "STOP_TIME", "TEST" };
 		RelationshipDescriber relDesc = new RelationshipDescriber("STOPS_AT");
-		
+
 		JSONArray responseCalendarStructure = RestClient.getInstance()
 				.createNodeStructure(tripNodeId, stopsTimesFromTrip,
 						childLabels, relDesc);
-		
 		Map<String, Long> stopTimesNodesIds = extractCreatedStopTimesNodes(responseCalendarStructure);
+				
+		for (RawData rawData : stopsTimesFromTrip) {
+			StopTimes stopTime = (StopTimes) rawData;
+			Long nodeFather = stopTimesNodesIds.get(stopTime.getStop_id());
+			createSetStopsNode(stopTime.getStop_id(), nodeFather);
+		}
+	}
 
+	public void createSetStopsNode(String stopId, long stopTimeNodeId)
+			throws Exception {
+
+		List<RawData> stopsFromTrip = findStopByStopId(stopList,
+				stopId);
+
+		String[] childLabels = { "BUSSTOP", "TEST" };
+		RelationshipDescriber relDesc = new RelationshipDescriber("PICKUP_AT");
+
+		JSONArray responseCalendarStructure = RestClient.getInstance()
+				.createNodeStructure(stopTimeNodeId, stopsFromTrip,
+						childLabels, relDesc);
+		Map<String, Long> stopTimesNodesIds = extractCreatedStopTimesNodes(responseCalendarStructure);
 	}
 
 	public void createSetCalendarDateNode(String serviceId, long serviceNodeId)
@@ -261,7 +281,7 @@ public class RouteNodeHandler {
 		}
 		return createNodes;
 	}
-	
+
 	private Map<String, Long> extractCreatedStopTimesNodes(
 			JSONArray responseStructure) throws Exception {
 		Map<String, Long> createNodes = new HashMap<String, Long>();
@@ -273,7 +293,28 @@ public class RouteNodeHandler {
 			if (jsBody != null) {
 				JSONObject jsData = (JSONObject) jsBody.get("data");
 				JSONObject jsMetadata = (JSONObject) jsBody.get("metadata");
-				Object objRouteId = jsData.get("tripId");
+				Object objRouteId = jsData.get("stopId");
+				if (objRouteId != null) {
+					createNodes.put((String) objRouteId,
+							(Long) jsMetadata.get("id"));
+				}
+			}
+		}
+		return createNodes;
+	}
+
+	private Map<String, Long> extractCreatedStopNodes(
+			JSONArray responseStructure) throws Exception {
+		Map<String, Long> createNodes = new HashMap<String, Long>();
+		for (Object object : responseStructure) {
+
+			JSONObject item = (JSONObject) object;
+
+			JSONObject jsBody = (JSONObject) item.get("body");
+			if (jsBody != null) {
+				JSONObject jsData = (JSONObject) jsBody.get("data");
+				JSONObject jsMetadata = (JSONObject) jsBody.get("metadata");
+				Object objRouteId = jsData.get("stopId");
 				if (objRouteId != null) {
 					createNodes.put((String) objRouteId,
 							(Long) jsMetadata.get("id"));
@@ -336,14 +377,28 @@ public class RouteNodeHandler {
 		}
 		return found;
 	}
-	
-	private List<RawData> findStopTimesByTripId(
-			List<StopTimes> allElements, String lookupId) {
+
+	private List<RawData> findStopTimesByTripId(List<StopTimes> allElements,
+			String lookupId) {
 		List<RawData> found = new ArrayList<RawData>();
 		for (Iterator<StopTimes> iterator = allElements.iterator(); iterator
 				.hasNext();) {
 			StopTimes element = iterator.next();
 			if (element.getTrip_id().equals(lookupId)) {
+				found.add(element);
+				iterator.remove();
+			}
+		}
+		return found;
+	}
+
+	private List<RawData> findStopByStopId(List<Stops> allElements,
+			String lookupId) {
+		List<RawData> found = new ArrayList<RawData>();
+		for (Iterator<Stops> iterator = allElements.iterator(); iterator
+				.hasNext();) {
+			Stops element = iterator.next();
+			if (element.getStop_id().equals(lookupId)) {
 				found.add(element);
 				iterator.remove();
 			}
