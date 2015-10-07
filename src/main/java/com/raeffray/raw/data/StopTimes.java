@@ -1,15 +1,25 @@
 package com.raeffray.raw.data;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonRawValue;
+
+@JsonInclude(Include.NON_NULL)
 public class StopTimes implements RawData {
 
+	@JsonProperty("tripId")
 	private String trip_id;
 	
 	private String arrival_time;
 	
 	private String departure_time; 
 	
+	@JsonProperty("stopId")
 	private String stop_id;
 	
+	@JsonProperty("sequence")
+	@JsonRawValue
 	private String stop_sequence;
 	
 	private String stop_headsign; 

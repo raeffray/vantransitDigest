@@ -1,7 +1,10 @@
 package com.raeffray.raw.data;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class Calendar implements RawData {
 	
+	@JsonProperty("serviceId")
 	private String service_id;
 	private String monday;
 	private String tuesday;
@@ -10,7 +13,11 @@ public class Calendar implements RawData {
 	private String friday;
 	private String saturday;
 	private String sunday;
+	
+	@JsonProperty("startDate")
 	private String start_date;
+	
+	@JsonProperty("endDate")
 	private String end_date;
 	public String getService_id() {
 		return service_id;

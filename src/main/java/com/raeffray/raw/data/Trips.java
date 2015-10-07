@@ -11,7 +11,7 @@ public class Trips implements RawData {
 	@JsonIgnore
 	private String service_id;
 	
-	@JsonProperty("agencyId")
+	@JsonProperty("tripId")
 	private String trip_id;
 	
 	@JsonProperty("headsign")

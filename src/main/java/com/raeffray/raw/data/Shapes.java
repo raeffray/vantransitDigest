@@ -1,15 +1,22 @@
 package com.raeffray.raw.data;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class Shapes implements RawData {
 	
+	@JsonProperty("shapeId")
 	private String shape_id; 
 	
+	@JsonProperty("latitude")
 	private String shape_pt_lat;
 	
+	@JsonProperty("longitude")
 	private String shape_pt_lon;
 	
+	@JsonProperty("sequence")
 	private String shape_pt_sequence;
 	
+	@JsonProperty("traveldDistance")
 	private String shape_dist_traveled;
 
 	public String getShape_id() {
