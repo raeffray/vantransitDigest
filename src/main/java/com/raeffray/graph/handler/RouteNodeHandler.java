@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.junit.Test;
@@ -27,6 +28,8 @@ import com.raeffray.rest.cient.RestClient;
 
 public class RouteNodeHandler {
 
+	static Logger logger = Logger.getLogger(RestClient.class);
+
 	private List<Agency> agencyList;
 
 	private List<Transfers> TransferList;
@@ -39,11 +42,15 @@ public class RouteNodeHandler {
 
 	private List<Stops> stopList;
 
-	private List<Calendar> calendarList;
+	private List<Calendar> serviceList;
 
 	private List<CalendarDates> calendarDateList;
 
 	private List<StopTimes> stopTimesList;
+
+	Map<String, Long> serviceNodesIds;
+
+	Map<String, Long> serviceDatesNodesIds;
 
 	public void loadCSVs() throws Exception {
 
@@ -65,13 +72,13 @@ public class RouteNodeHandler {
 		// List<Shapes> shapeList = ReflectionData.getInstance().buildList(
 		// Shapes.class, reader.readCSVForData(Shapes.class));
 
-		stopList = ReflectionData.getInstance().buildList(
-				Stops.class, reader.readCSVForData(Stops.class));
+		stopList = ReflectionData.getInstance().buildList(Stops.class,
+				reader.readCSVForData(Stops.class));
 
 		stopTimesList = ReflectionData.getInstance().buildList(StopTimes.class,
 				reader.readCSVForData(StopTimes.class));
 
-		calendarList = ReflectionData.getInstance().buildList(Calendar.class,
+		serviceList = ReflectionData.getInstance().buildList(Calendar.class,
 				reader.readCSVForData(Calendar.class));
 
 		calendarDateList = ReflectionData.getInstance()
@@ -84,7 +91,11 @@ public class RouteNodeHandler {
 
 		try {
 
+			logger.info("start of Processing");
+
 			loadCSVs();
+
+			createSetServiceNode();
 
 			for (Agency agency : agencyList) {
 				String[] fateherLabels = { "AGENCY", "TEST" };
@@ -95,6 +106,9 @@ public class RouteNodeHandler {
 				createSetRouteNode(agency.getAgency_id(), fatherId);
 
 			}
+
+			logger.info("end of Processing");
+
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -112,16 +126,15 @@ public class RouteNodeHandler {
 		RelationshipDescriber relDesc = new RelationshipDescriber("OPERATES");
 
 		JSONArray responseRouteStructure = RestClient.getInstance()
-				.createNodeStructure(agencyNodeId, routesFromAgency,
-						childLabels, relDesc);
+				.createNodeStructure(routesFromAgency, childLabels, relDesc,
+						agencyNodeId);
 
 		Map<String, Long> routeNodesIds = extractCreatedRouteNodes(responseRouteStructure);
 
 		for (RawData rawRoute : routesFromAgency) {
 			Routes route = (Routes) rawRoute;
 			Long routeFather = routeNodesIds.get(route.getRoute_id());
-			createSetTripNode(route.getRoute_id(),
-					routeNodesIds.get(route.getRoute_id()));
+			createSetTripNode(route.getRoute_id(), routeFather);
 		}
 	}
 
@@ -132,39 +145,53 @@ public class RouteNodeHandler {
 
 		String[] childLabels = { "TRIP", "TEST" };
 		RelationshipDescriber relDesc = new RelationshipDescriber("TRAVELS");
-
+		RelationshipDescriber serviceDesc = new RelationshipDescriber("EXECUTE");
+		
 		JSONArray responseTripStructure = RestClient.getInstance()
-				.createNodeStructure(routeNodeId, tripsFromRoute, childLabels,
-						relDesc);
+				.createNodeStructureForTrip(tripsFromRoute, childLabels,
+						relDesc, serviceDesc, serviceNodesIds, routeNodeId);
 		Map<String, Long> tripNodesIds = extractCreatedTripNodes(responseTripStructure);
 
 		for (RawData rawData : tripsFromRoute) {
 			Trips trip = (Trips) rawData;
 			Long nodeFather = tripNodesIds.get(trip.getTrip_id());
-			createSetCalendarNode(trip.getTrip_id(), nodeFather,
-					trip.getService_id());
 			createSetStopTimesNode(trip.getTrip_id(), nodeFather);
 		}
 	}
 
-	public void createSetCalendarNode(String tripId, long tripNodeId,
-			String serviceId) throws Exception {
+	public void createSetServiceNode() throws Exception {
 
-		List<RawData> calendarsFromTrip = findCalendarByServiceId(calendarList,
-				serviceId);
+		String[] serviceLabels = { "SERVICE", "TEST" };
 
-		String[] childLabels = { "SERVICE", "TEST" };
-		RelationshipDescriber relDesc = new RelationshipDescriber("EXECUTE");
-		JSONArray responseCalendarStructure = RestClient.getInstance()
-				.createNodeStructure(tripNodeId, calendarsFromTrip,
-						childLabels, relDesc);
-		Map<String, Long> calendarpNodesIds = extractCreatedCalendarNodes(responseCalendarStructure);
+		List<RawData> rawList = new ArrayList<RawData>();
 
-		for (RawData rawData : calendarsFromTrip) {
-			Calendar calendar = (Calendar) rawData;
-			Long nodeFather = calendarpNodesIds.get(calendar.getService_id());
-			createSetCalendarDateNode(calendar.getService_id(), nodeFather);
+		rawList.addAll(serviceList);
+
+		JSONArray responseNodes = RestClient.getInstance().createNodes(
+				serviceLabels, rawList);
+
+		serviceNodesIds = extractCreatedCalendarNodes(responseNodes);
+
+		for (Calendar service : serviceList) {
+			Long serviceNodeId = serviceNodesIds.get(service.getService_id());
+			createSetServiceDateNode(service.getService_id(), serviceNodeId);
 		}
+	}
+
+	public void createSetServiceDateNode(String serviceId, long serviceNodeId)
+			throws Exception {
+
+		List<RawData> calendarDatesFromTrip = findCalendarDateByServiceId(
+				calendarDateList, serviceId);
+
+		String[] childLabels = { "SERVICE_DATE", "TEST" };
+		RelationshipDescriber relDesc = new RelationshipDescriber(
+				"IN_EFFECT_ON");
+		JSONArray responseCalendarDateStructure = RestClient.getInstance()
+				.createNodeStructure(calendarDatesFromTrip, childLabels,
+						relDesc, serviceNodeId);
+		Map<String, Long> tripNodesIds = extractCreatedCalendarNodes(responseCalendarDateStructure);
+
 	}
 
 	public void createSetStopTimesNode(String tripId, long tripNodeId)
@@ -172,15 +199,15 @@ public class RouteNodeHandler {
 
 		List<RawData> stopsTimesFromTrip = findStopTimesByTripId(stopTimesList,
 				tripId);
-		
+
 		String[] childLabels = { "STOP_TIME", "TEST" };
 		RelationshipDescriber relDesc = new RelationshipDescriber("STOPS_AT");
 
 		JSONArray responseCalendarStructure = RestClient.getInstance()
-				.createNodeStructure(tripNodeId, stopsTimesFromTrip,
-						childLabels, relDesc);
+				.createNodeStructure(stopsTimesFromTrip, childLabels, relDesc,
+						tripNodeId);
 		Map<String, Long> stopTimesNodesIds = extractCreatedStopTimesNodes(responseCalendarStructure);
-				
+
 		for (RawData rawData : stopsTimesFromTrip) {
 			StopTimes stopTime = (StopTimes) rawData;
 			Long nodeFather = stopTimesNodesIds.get(stopTime.getStop_id());
@@ -191,32 +218,15 @@ public class RouteNodeHandler {
 	public void createSetStopsNode(String stopId, long stopTimeNodeId)
 			throws Exception {
 
-		List<RawData> stopsFromTrip = findStopByStopId(stopList,
-				stopId);
+		List<RawData> stopsFromTrip = findStopByStopId(stopList, stopId);
 
 		String[] childLabels = { "BUSSTOP", "TEST" };
 		RelationshipDescriber relDesc = new RelationshipDescriber("PICKUP_AT");
 
 		JSONArray responseCalendarStructure = RestClient.getInstance()
-				.createNodeStructure(stopTimeNodeId, stopsFromTrip,
-						childLabels, relDesc);
+				.createNodeStructure(stopsFromTrip, childLabels, relDesc,
+						stopTimeNodeId);
 		Map<String, Long> stopTimesNodesIds = extractCreatedStopTimesNodes(responseCalendarStructure);
-	}
-
-	public void createSetCalendarDateNode(String serviceId, long serviceNodeId)
-			throws Exception {
-
-		List<RawData> calendarDatesFromTrip = findCalendarDateByServiceId(
-				calendarDateList, serviceId);
-
-		String[] childLabels = { "SERVICE_DATE", "TEST" };
-		RelationshipDescriber relDesc = new RelationshipDescriber(
-				"IN_EFFECT_ON");
-		JSONArray responseCalendarDateStructure = RestClient.getInstance()
-				.createNodeStructure(serviceNodeId, calendarDatesFromTrip,
-						childLabels, relDesc);
-		Map<String, Long> tripNodesIds = extractCreatedCalendarNodes(responseCalendarDateStructure);
-
 	}
 
 	private Map<String, Long> extractCreatedRouteNodes(
@@ -330,7 +340,6 @@ public class RouteNodeHandler {
 			Trips trip = iterator.next();
 			if (trip.getRoute_id().equals(routeId)) {
 				foundTrips.add(trip);
-				iterator.remove();
 			}
 		}
 		return foundTrips;
@@ -372,7 +381,6 @@ public class RouteNodeHandler {
 			CalendarDates element = iterator.next();
 			if (element.getService_id().equals(lookupId)) {
 				found.add(element);
-				iterator.remove();
 			}
 		}
 		return found;
@@ -400,7 +408,6 @@ public class RouteNodeHandler {
 			Stops element = iterator.next();
 			if (element.getStop_id().equals(lookupId)) {
 				found.add(element);
-				iterator.remove();
 			}
 		}
 		return found;

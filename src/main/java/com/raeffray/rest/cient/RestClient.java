@@ -2,6 +2,7 @@ package com.raeffray.rest.cient;
 
 import java.text.MessageFormat;
 import java.util.List;
+import java.util.Map;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -15,7 +16,6 @@ import com.raeffray.commons.Configuration;
 import com.raeffray.graph.RelationshipDescriber;
 import com.raeffray.json.JsonUtils;
 import com.raeffray.raw.data.RawData;
-import com.raeffray.raw.data.StopTimes;
 import com.raeffray.raw.data.Trips;
 import com.raeffray.rest.cient.enums.GraphResourceCatalog;
 import com.sun.jersey.api.client.Client;
@@ -89,6 +89,7 @@ public class RestClient {
 
 		if (response.getStatus() != 200) {
 			logger.error("Fail");
+			logger.error("request: [" + request.parseJson() + "]");
 			throw new RuntimeException("Failed : HTTP error code : "
 					+ response.getStatus());
 		}
@@ -166,9 +167,10 @@ public class RestClient {
 		return executeBatchOperation(request);
 	}
 
-	public JSONArray createNodeStructure(long fatherId,
-			List<RawData> childNodes, String[] childLabels,
-			RelationshipDescriber relationshipDescriber) throws Exception {
+	public JSONArray createNodeStructureForTrip(List<RawData> childNodes,
+			String[] childLabels, RelationshipDescriber relationshipDescriber,
+			RelationshipDescriber serviceRelationshipDescriber,
+			Map<String, Long> nodeServiceIds, long fatherId) throws Exception {
 
 		String url = Configuration.getConfiguration().getString("graph.db.url");
 
@@ -178,12 +180,64 @@ public class RestClient {
 		int lastId = 0;
 		lastId = countIds;
 
-		request.addOperation(
-				countIds++,
-				GraphResourceCatalog.BATCH_OPERATION_NODE_FETCH.getHttpMethod(),
-				MessageFormat.format(
-						GraphResourceCatalog.BATCH_OPERATION_NODE_FETCH
-								.getResource(), String.valueOf(fatherId)), null);
+		for (RawData rawData : childNodes) {
+			Trips trip = (Trips) rawData;
+
+			Long serviceNodeId = nodeServiceIds.get(trip.getService_id());
+
+			definePersonalizaedRelAttributes(rawData, relationshipDescriber);
+			String body = JsonUtils.parseJson(rawData);
+
+			lastId = countIds;
+			request.addOperation(countIds++,
+					GraphResourceCatalog.BATCH_OPERATION_NODE_CREATE
+							.getHttpMethod(),
+					GraphResourceCatalog.BATCH_OPERATION_NODE_CREATE
+							.getResource(), body);
+
+			request.addOperation(countIds++,
+					GraphResourceCatalog.BATCH_OPERATION_LABEL_CREATE
+							.getHttpMethod(), MessageFormat.format(
+							GraphResourceCatalog.BATCH_OPERATION_LABEL_CREATE
+									.getResource(), "{" + lastId + "}"),
+					JsonUtils.parseJsonSingleValue(childLabels));
+			relationshipDescriber.setTo("{" + lastId + "}");
+			serviceRelationshipDescriber.setTo((url + MessageFormat.format(
+					GraphResourceCatalog.NODE_FETCH.getResource(),
+					String.valueOf(serviceNodeId))));
+
+			request.addOperation(countIds++,
+					GraphResourceCatalog.NODE_CREATE_RELATIONSHIP
+							.getHttpMethod(), (url + MessageFormat.format(
+							GraphResourceCatalog.NODE_CREATE_RELATIONSHIP
+									.getResource(), String.valueOf(fatherId))),
+					relationshipDescriber.parseJson());
+
+			request.addOperation(
+					countIds++,
+					GraphResourceCatalog.BATCH_OPERATION_RELATIONSHIP_CREATE
+							.getHttpMethod(),
+					MessageFormat
+							.format(GraphResourceCatalog.BATCH_OPERATION_RELATIONSHIP_CREATE
+									.getResource(), "{" + lastId + "}"),
+					serviceRelationshipDescriber.parseJson());
+		}
+		logger.info("request created");
+		JSONArray executeBatchOperation = executeBatchOperation(request);
+		return executeBatchOperation;
+	}
+
+	public JSONArray createNodeStructure(List<RawData> childNodes,
+			String[] childLabels, RelationshipDescriber relationshipDescriber,
+			long... fatherIds) throws Exception {
+
+		String url = Configuration.getConfiguration().getString("graph.db.url");
+
+		logger.info("Creating request");
+		BatchOperationRequest request = new BatchOperationRequest();
+		int countIds = 0;
+		int lastId = 0;
+		lastId = countIds;
 
 		for (RawData rawData : childNodes) {
 			definePersonalizaedRelAttributes(rawData, relationshipDescriber);
@@ -204,13 +258,15 @@ public class RestClient {
 					JsonUtils.parseJsonSingleValue(childLabels));
 			relationshipDescriber.setTo("{" + lastId + "}");
 
-			request.addOperation(countIds++,
-
-			GraphResourceCatalog.NODE_CREATE_RELATIONSHIP.getHttpMethod(),
-					(url + MessageFormat.format(
-							GraphResourceCatalog.NODE_CREATE_RELATIONSHIP
-									.getResource(), String.valueOf(fatherId))),
-					relationshipDescriber.parseJson());
+			for (long fatherId : fatherIds) {
+				request.addOperation(countIds++,
+						GraphResourceCatalog.NODE_CREATE_RELATIONSHIP
+								.getHttpMethod(), (url + MessageFormat.format(
+								GraphResourceCatalog.NODE_CREATE_RELATIONSHIP
+										.getResource(), String
+										.valueOf(fatherId))),
+						relationshipDescriber.parseJson());
+			}
 		}
 		logger.info("request created");
 		JSONArray executeBatchOperation = executeBatchOperation(request);
