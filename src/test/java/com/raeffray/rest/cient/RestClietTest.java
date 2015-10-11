@@ -90,7 +90,7 @@ public class RestClietTest {
 		agency2.setAgency_name("AG_DAMN_IT");
 		agency2.setAgency_url("http://that.one");
 		
-		JSONArray createNode = RestClient.getInstance().createNode(labels, agency, agency1, agency2);
+		long createNode = RestClient.getInstance().createNode(labels, agency, agency1, agency2);
 		
 		int a = 1;
 		

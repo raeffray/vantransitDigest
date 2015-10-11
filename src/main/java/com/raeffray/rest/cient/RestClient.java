@@ -115,24 +115,26 @@ public class RestClient {
 		return executeBatchOperation(request);
 	}
 
-	public long createNode(String[] labels, RawData rawData) throws Exception {
+	public long createNode(String[] labels, RawData... rawData) throws Exception {
 		logger.info("Creating request");
 		BatchOperationRequest request = new BatchOperationRequest();
 		int countIds = -1;
 		int lastId = 0;
-		String body = JsonUtils.parseJson(rawData);
-		request.addOperation(++countIds,
-				GraphResourceCatalog.BATCH_OPERATION_NODE_CREATE
-						.getHttpMethod(),
-				GraphResourceCatalog.BATCH_OPERATION_NODE_CREATE.getResource(),
-				body);
-		lastId = countIds;
-		request.addOperation(++countIds,
-				GraphResourceCatalog.BATCH_OPERATION_LABEL_CREATE
-						.getHttpMethod(), MessageFormat.format(
-						GraphResourceCatalog.BATCH_OPERATION_LABEL_CREATE
-								.getResource(), "{" + lastId + "}"), JsonUtils
-						.parseJsonSingleValue(labels));
+		for (RawData rawDataItem : rawData) {
+			String body = JsonUtils.parseJson(rawDataItem);
+			request.addOperation(++countIds,
+					GraphResourceCatalog.BATCH_OPERATION_NODE_CREATE
+							.getHttpMethod(),
+					GraphResourceCatalog.BATCH_OPERATION_NODE_CREATE.getResource(),
+					body);
+			lastId = countIds;
+			request.addOperation(++countIds,
+					GraphResourceCatalog.BATCH_OPERATION_LABEL_CREATE
+							.getHttpMethod(), MessageFormat.format(
+							GraphResourceCatalog.BATCH_OPERATION_LABEL_CREATE
+									.getResource(), "{" + lastId + "}"), JsonUtils
+							.parseJsonSingleValue(labels));
+		}
 		logger.info("request created");
 
 		JSONArray executeBatchOperation = executeBatchOperation(request);
