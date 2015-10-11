@@ -1,5 +1,10 @@
 package com.raeffray.reflection;
 
+import com.raeffray.raw.data.RawData;
+import org.apache.commons.lang3.reflect.FieldUtils;
+import org.apache.commons.lang3.text.WordUtils;
+import org.apache.log4j.Logger;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -7,12 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.apache.commons.lang3.reflect.FieldUtils;
-import org.apache.commons.lang3.text.WordUtils;
-import org.apache.log4j.Logger;
-
-import com.raeffray.raw.data.RawData;
 
 /**
  * Class to handle reflection jobs
@@ -54,25 +53,11 @@ public class ReflectionData {
 	public <T> List<T> buildList(Class<?> clazz,
 			List<Map<String, String>> entries) throws Exception {
 
-		List<T> list = new ArrayList<T>();
-
-		Method[] methods = clazz.getMethods();
+		List<T> list = new ArrayList<>();
 
 		for (Map<String, String> fields : entries) {
 
-			Set<String> keySet = fields.keySet();
-
-			T object = (T) clazz.newInstance();
-
-			for (String field : keySet) {
-
-				String value = fields.get(field);
-
-				Method publicMethod = getMethod(methods,
-						"set" + WordUtils.capitalize(field));
-
-				publicMethod.invoke(object, value);
-			}
+			T object = buildInstance(clazz, fields);
 
 			list.add(object);
 		}
@@ -80,12 +65,23 @@ public class ReflectionData {
 		return list;
 	}
 
-	private Method getMethod(Method[] methods, String methodName) {
-		for (int i = 0; i < methods.length; i++) {
-			if (methods[i].getName().equals(methodName)) {
-				return methods[i];
+	public <T> T buildInstance(Class<?> clazz, Map<String, String> fields) throws InstantiationException, IllegalAccessException, InvocationTargetException {
+		Set<String> keySet = fields.keySet();
+
+		T object = (T) clazz.newInstance();
+
+		for (String field : keySet) {
+
+			String value = fields.get(field);
+
+			Method publicMethod;
+			try {
+				publicMethod = clazz.getMethod("set" + WordUtils.capitalize(field), String.class);
+				publicMethod.invoke(object, value);
+			} catch (NoSuchMethodException e) {
+				// Ignore unmapped fields
 			}
 		}
-		return null;
+		return object;
 	}
 }
