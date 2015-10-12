@@ -7,6 +7,7 @@ import java.util.Collection;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonRawValue;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
@@ -73,9 +74,13 @@ public class BatchOperationRequest implements Serializable {
 		this.addOperation(new Operation(id, method, reosurce, body));	
 	}
 	
-	public String parseJson() throws Exception{
-		ObjectWriter ow = new ObjectMapper().writer();
-		return ow.writeValueAsString(this.getOperations());
+	public String parseJson() {
+		try {
+			ObjectWriter ow = new ObjectMapper().writer();
+			return ow.writeValueAsString(this.getOperations());
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 }
