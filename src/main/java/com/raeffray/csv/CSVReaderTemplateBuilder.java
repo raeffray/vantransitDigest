@@ -1,6 +1,7 @@
 package com.raeffray.csv;
 
 import com.raeffray.commons.Configuration;
+import org.apache.commons.io.input.BOMInputStream;
 
 import java.io.*;
 
@@ -35,13 +36,12 @@ public class CSVReaderTemplateBuilder<T> {
                 .getString("csv.path");
 
         InputStream stream = getClass().getResourceAsStream(csvPath);
-        Reader reader;
         if (stream != null) {
-            reader = new InputStreamReader(stream);
+            stream = new BOMInputStream(stream);
         } else {
-            reader = new FileReader(csvPath);
+            stream = new BOMInputStream(new FileInputStream(csvPath));
         }
-        template.read(reader, new InstanceConverter<>(clazz, handler));
+        template.read(new InputStreamReader(stream), new InstanceConverter<>(clazz, handler));
     }
 
     private CSVReaderTemplateBuilder(final Class<T> clazz) {
