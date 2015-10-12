@@ -31,7 +31,7 @@ public class CSVReaderTemplateBuilder<T> {
      * @param handler handler to be called on each line read
      * @throws IOException error reading the CSV file
      */
-    public void processWith(InstanceHandler<T> handler) throws IOException {
+    public void processWith(InstanceHandler<? super T> handler) throws IOException {
         String csvPath = Configuration.getConfigurationForClass(clazz)
                 .getString("csv.path");
 

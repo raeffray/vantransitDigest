@@ -12,9 +12,9 @@ import java.util.Map;
 public class InstanceConverter<T> implements CSVRowHandler {
 
     private final Class<T> clazz;
-    private final InstanceHandler<T> instanceHandler;
+    private final InstanceHandler<? super T> instanceHandler;
 
-    public InstanceConverter(final Class<T> clazz, final InstanceHandler<T> instanceHandler) {
+    public InstanceConverter(final Class<T> clazz, final InstanceHandler<? super T> instanceHandler) {
         this.clazz = clazz;
         this.instanceHandler = instanceHandler;
     }

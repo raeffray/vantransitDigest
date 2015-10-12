@@ -18,6 +18,7 @@ import org.json.simple.parser.ParseException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import java.text.MessageFormat;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -166,6 +167,30 @@ public class RestClient {
 							GraphResourceCatalog.BATCH_OPERATION_LABEL_CREATE
 									.getResource(), "{" + lastId + "}"),
 					JsonUtils.generateJsonSingleValue(labels));
+		}
+		logger.info("request created");
+		return executeBatchOperation(request);
+	}
+
+	public JSONArray createLabeledNodes(Collection<LabeledNode> nodes) {
+		logger.info("Creating request");
+		BatchOperationRequest request = new BatchOperationRequest();
+		int countIds = -1;
+		int lastId = 0;
+		for (LabeledNode node : nodes) {
+			String body = JsonUtils.generateJson(node.getNode());
+			request.addOperation(++countIds,
+					GraphResourceCatalog.BATCH_OPERATION_NODE_CREATE
+							.getHttpMethod(),
+					GraphResourceCatalog.BATCH_OPERATION_NODE_CREATE
+							.getResource(), body);
+			lastId = countIds;
+			request.addOperation(++countIds,
+					GraphResourceCatalog.BATCH_OPERATION_LABEL_CREATE
+							.getHttpMethod(), MessageFormat.format(
+							GraphResourceCatalog.BATCH_OPERATION_LABEL_CREATE
+									.getResource(), "{" + lastId + "}"),
+					JsonUtils.generateJsonSingleValue(node.getLabels()));
 		}
 		logger.info("request created");
 		return executeBatchOperation(request);
