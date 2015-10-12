@@ -2,3 +2,5 @@
 .project
 .settings
 /target/
+google_transit/
+neo4j-data/

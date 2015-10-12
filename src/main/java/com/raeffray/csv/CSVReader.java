@@ -16,6 +16,10 @@ import com.raeffray.commons.Configuration;
 import com.raeffray.raw.data.RawData;
 import com.raeffray.reflection.ReflectionData;
 
+/**
+ * @deprecated use {@link CSVReaderTemplateBuilder} instead
+ */
+@Deprecated
 public class CSVReader {
 
 	public List<Map<String, String>> readCSVForData(

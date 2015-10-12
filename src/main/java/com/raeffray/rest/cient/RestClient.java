@@ -1,17 +1,5 @@
 package com.raeffray.rest.cient;
 
-import java.text.MessageFormat;
-import java.util.List;
-import java.util.Map;
-
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-
-import org.apache.log4j.Logger;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-
 import com.raeffray.commons.Configuration;
 import com.raeffray.graph.RelationshipDescriber;
 import com.raeffray.json.JsonUtils;
@@ -21,6 +9,18 @@ import com.raeffray.rest.cient.enums.GraphResourceCatalog;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import org.apache.log4j.Logger;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import java.text.MessageFormat;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 public class RestClient {
 
@@ -69,33 +69,36 @@ public class RestClient {
 
 	}
 
-	public JSONArray executeBatchOperation(BatchOperationRequest request)
-			throws Exception {
+	public JSONArray executeBatchOperation(BatchOperationRequest request) {
 
-		String uri = GraphResourceCatalog.BATCH_OPERATION.getResource();
-		String authKey = Configuration.getConfiguration().getString(
-				"authorization.key");
+		try {
+			String uri = GraphResourceCatalog.BATCH_OPERATION.getResource();
+			String authKey = Configuration.getConfiguration().getString(
+					"authorization.key");
 
-		WebResource webResource = client.resource(graphUrl + uri);
+			WebResource webResource = client.resource(graphUrl + uri);
 
-		WebResource.Builder builder = webResource.accept(
-				MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION,
-				authKey);
+			WebResource.Builder builder = webResource.accept(
+					MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION,
+					authKey);
 
-		logger.info("posting!");
-		ClientResponse response = builder.post(ClientResponse.class,
-				request.parseJson());
-		logger.info("posted!");
+			logger.info("posting!");
+			ClientResponse response = builder.post(ClientResponse.class,
+					request.parseJson());
+			logger.info("posted!");
 
-		if (response.getStatus() != 200) {
-			logger.error("Fail");
-			logger.error("request: [" + request.parseJson() + "]");
-			throw new RuntimeException("Failed : HTTP error code : "
-					+ response.getStatus());
+			if (response.getStatus() != 200) {
+				logger.error("Fail");
+				logger.error("request: [" + request.parseJson() + "]");
+				throw new RuntimeException("Failed : HTTP error code : "
+						+ response.getStatus());
+			}
+			logger.info("parsing the response");
+			return (JSONArray) new JSONParser().parse(response
+					.getEntity(String.class));
+		} catch (ParseException e) {
+			throw new RuntimeException(e);
 		}
-		logger.info("parsing the response");
-		return (JSONArray) new JSONParser().parse(response
-				.getEntity(String.class));
 
 	}
 
@@ -115,24 +118,26 @@ public class RestClient {
 		return executeBatchOperation(request);
 	}
 
-	public long createNode(String[] labels, RawData rawData) throws Exception {
+	public long createNode(String[] labels, RawData... rawData) {
 		logger.info("Creating request");
 		BatchOperationRequest request = new BatchOperationRequest();
 		int countIds = -1;
 		int lastId = 0;
-		String body = JsonUtils.parseJson(rawData);
-		request.addOperation(++countIds,
-				GraphResourceCatalog.BATCH_OPERATION_NODE_CREATE
-						.getHttpMethod(),
-				GraphResourceCatalog.BATCH_OPERATION_NODE_CREATE.getResource(),
-				body);
-		lastId = countIds;
-		request.addOperation(++countIds,
-				GraphResourceCatalog.BATCH_OPERATION_LABEL_CREATE
-						.getHttpMethod(), MessageFormat.format(
-						GraphResourceCatalog.BATCH_OPERATION_LABEL_CREATE
-								.getResource(), "{" + lastId + "}"), JsonUtils
-						.parseJsonSingleValue(labels));
+		for (RawData rawDataItem : rawData) {
+			String body = JsonUtils.generateJson(rawDataItem);
+			request.addOperation(++countIds,
+					GraphResourceCatalog.BATCH_OPERATION_NODE_CREATE
+							.getHttpMethod(),
+					GraphResourceCatalog.BATCH_OPERATION_NODE_CREATE.getResource(),
+					body);
+			lastId = countIds;
+			request.addOperation(++countIds,
+					GraphResourceCatalog.BATCH_OPERATION_LABEL_CREATE
+							.getHttpMethod(), MessageFormat.format(
+							GraphResourceCatalog.BATCH_OPERATION_LABEL_CREATE
+									.getResource(), "{" + lastId + "}"), JsonUtils
+							.generateJsonSingleValue(labels));
+		}
 		logger.info("request created");
 
 		JSONArray executeBatchOperation = executeBatchOperation(request);
@@ -149,7 +154,7 @@ public class RestClient {
 		int countIds = -1;
 		int lastId = 0;
 		for (RawData rawData : rawDataList) {
-			String body = JsonUtils.parseJson(rawData);
+			String body = JsonUtils.generateJson(rawData);
 			request.addOperation(++countIds,
 					GraphResourceCatalog.BATCH_OPERATION_NODE_CREATE
 							.getHttpMethod(),
@@ -161,7 +166,31 @@ public class RestClient {
 							.getHttpMethod(), MessageFormat.format(
 							GraphResourceCatalog.BATCH_OPERATION_LABEL_CREATE
 									.getResource(), "{" + lastId + "}"),
-					JsonUtils.parseJsonSingleValue(labels));
+					JsonUtils.generateJsonSingleValue(labels));
+		}
+		logger.info("request created");
+		return executeBatchOperation(request);
+	}
+
+	public JSONArray createLabeledNodes(Collection<LabeledNode> nodes) {
+		logger.info("Creating request");
+		BatchOperationRequest request = new BatchOperationRequest();
+		int countIds = -1;
+		int lastId = 0;
+		for (LabeledNode node : nodes) {
+			String body = JsonUtils.generateJson(node.getNode());
+			request.addOperation(++countIds,
+					GraphResourceCatalog.BATCH_OPERATION_NODE_CREATE
+							.getHttpMethod(),
+					GraphResourceCatalog.BATCH_OPERATION_NODE_CREATE
+							.getResource(), body);
+			lastId = countIds;
+			request.addOperation(++countIds,
+					GraphResourceCatalog.BATCH_OPERATION_LABEL_CREATE
+							.getHttpMethod(), MessageFormat.format(
+							GraphResourceCatalog.BATCH_OPERATION_LABEL_CREATE
+									.getResource(), "{" + lastId + "}"),
+					JsonUtils.generateJsonSingleValue(node.getLabels()));
 		}
 		logger.info("request created");
 		return executeBatchOperation(request);
@@ -186,7 +215,7 @@ public class RestClient {
 			Long serviceNodeId = nodeServiceIds.get(trip.getService_id());
 
 			definePersonalizaedRelAttributes(rawData, relationshipDescriber);
-			String body = JsonUtils.parseJson(rawData);
+			String body = JsonUtils.generateJson(rawData);
 
 			lastId = countIds;
 			request.addOperation(countIds++,
@@ -200,7 +229,7 @@ public class RestClient {
 							.getHttpMethod(), MessageFormat.format(
 							GraphResourceCatalog.BATCH_OPERATION_LABEL_CREATE
 									.getResource(), "{" + lastId + "}"),
-					JsonUtils.parseJsonSingleValue(childLabels));
+					JsonUtils.generateJsonSingleValue(childLabels));
 			relationshipDescriber.setTo("{" + lastId + "}");
 			serviceRelationshipDescriber.setTo((url + MessageFormat.format(
 					GraphResourceCatalog.NODE_FETCH.getResource(),
@@ -241,7 +270,7 @@ public class RestClient {
 
 		for (RawData rawData : childNodes) {
 			definePersonalizaedRelAttributes(rawData, relationshipDescriber);
-			String body = JsonUtils.parseJson(rawData);
+			String body = JsonUtils.generateJson(rawData);
 
 			lastId = countIds;
 			request.addOperation(countIds++,
@@ -255,7 +284,7 @@ public class RestClient {
 							.getHttpMethod(), MessageFormat.format(
 							GraphResourceCatalog.BATCH_OPERATION_LABEL_CREATE
 									.getResource(), "{" + lastId + "}"),
-					JsonUtils.parseJsonSingleValue(childLabels));
+					JsonUtils.generateJsonSingleValue(childLabels));
 			relationshipDescriber.setTo("{" + lastId + "}");
 
 			for (long fatherId : fatherIds) {
