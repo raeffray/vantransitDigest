@@ -28,4 +28,19 @@ public class InstanceConverter<T> implements CSVRowHandler {
             throw new RuntimeException(e);
         }
     }
+    
+    @Override
+    public void processLine(Map<String, String> row, String idToSearch) {
+        try {
+            T instance = ReflectionData.getInstance().buildInstance(clazz, row,idToSearch);
+            instanceHandler.processInstance(instance);
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+	@Override
+	public void notifyEOF() {
+		instanceHandler.endProcess();
+	}
 }

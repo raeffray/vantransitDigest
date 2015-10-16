@@ -1,6 +1,8 @@
 package com.raeffray.reflection;
 
+import com.raeffray.annotations.RawDataId;
 import com.raeffray.raw.data.RawData;
+
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.commons.lang3.text.WordUtils;
 import org.apache.log4j.Logger;
@@ -53,11 +55,18 @@ public class ReflectionData {
 	public <T> List<T> buildList(Class<?> clazz,
 			List<Map<String, String>> entries) throws Exception {
 
+		return buildList(clazz, entries, null);
+	}
+
+	public <T> List<T> buildList(Class<?> clazz,
+			List<Map<String, String>> entries, String idToSearch)
+			throws Exception {
+
 		List<T> list = new ArrayList<>();
 
 		for (Map<String, String> fields : entries) {
 
-			T object = buildInstance(clazz, fields);
+			T object = buildInstance(clazz, fields, idToSearch);
 
 			list.add(object);
 		}
@@ -65,18 +74,41 @@ public class ReflectionData {
 		return list;
 	}
 
-	public <T> T buildInstance(Class<?> clazz, Map<String, String> fields) throws InstantiationException, IllegalAccessException, InvocationTargetException {
+	public <T> T buildInstance(Class<?> clazz, Map<String, String> fields)
+			throws InstantiationException, IllegalAccessException,
+			InvocationTargetException, SecurityException {
+
+		return buildInstance(clazz, fields, null);
+
+	}
+
+	public <T> T buildInstance(Class<?> clazz, Map<String, String> fields,
+			String idToSearch) throws InstantiationException,
+			IllegalAccessException, InvocationTargetException,
+			SecurityException {
 		Set<String> keySet = fields.keySet();
 
 		T object = (T) clazz.newInstance();
 
+		RawDataId annotation = clazz.getAnnotation(RawDataId.class);
+
+		String fieldToTest = null;
+
+		if (annotation != null) {
+			fieldToTest = annotation.identifier();
+		}
+
 		for (String field : keySet) {
-
 			String value = fields.get(field);
-
+			if (idToSearch != null && field.equals(fieldToTest)) {
+				if (!value.equals(idToSearch)) {
+					return null;
+				}
+			}
 			Method publicMethod;
 			try {
-				publicMethod = clazz.getMethod("set" + WordUtils.capitalize(field), String.class);
+				publicMethod = clazz.getMethod(
+						"set" + WordUtils.capitalize(field), String.class);
 				publicMethod.invoke(object, value);
 			} catch (NoSuchMethodException e) {
 				// Ignore unmapped fields

@@ -24,6 +24,12 @@ public class InstanceConverterTest {
             public void processInstance(Routes instance) {
                 routes = instance;
             }
+
+			@Override
+			public void endProcess() {
+				// foo
+				
+			}
         });
         converter.processLine(fakeRow());
         assertThat(routes.getRoute_id(), is(equalTo("aaa")));

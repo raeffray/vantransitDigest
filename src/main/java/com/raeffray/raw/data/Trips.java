@@ -2,7 +2,9 @@ package com.raeffray.raw.data;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.raeffray.annotations.RawDataId;
 
+@RawDataId(identifier="route_id")
 public class Trips implements RawData {
 	
 	@JsonIgnore

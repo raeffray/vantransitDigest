@@ -28,6 +28,11 @@ public class CSVReaderTemplateBuilderTest {
                 System.out.println(ToStringBuilder.reflectionToString(instance));
                 assertThat(counter++, is(equalTo(0)));
             }
+			@Override
+			public void endProcess() {
+				// TODO Auto-generated method stub
+				
+			}
         });
         // AAAA,BBBB,CCC,DDDE,EEEE,FFFF,GGGG,HHHH,IIII
         assertThat(routes.getRoute_id(), is(equalTo("AAAA")));

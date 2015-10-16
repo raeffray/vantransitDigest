@@ -12,4 +12,16 @@ public interface CSVRowHandler {
      * @param row the line represented as a map
      */
     void processLine(Map<String, String> row);
+    
+    /**
+     * Callback for processing a single line of a CSV file.
+     *
+     * @param row the line represented as a map
+     */
+    void processLine(Map<String, String> row, String idToSearch);
+    /**
+     * Callback for notify the end of processing.
+     */
+    void notifyEOF();
+    
 }

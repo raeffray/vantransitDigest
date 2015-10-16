@@ -4,8 +4,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonRawValue;
+import com.raeffray.annotations.RawDataId;
 
 @JsonInclude(Include.NON_NULL)
+@RawDataId(identifier="trip_id")
 public class StopTimes implements RawData {
 
 	@JsonProperty("tripId")

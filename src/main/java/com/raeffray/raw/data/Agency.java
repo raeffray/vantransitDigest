@@ -3,8 +3,10 @@ package com.raeffray.raw.data;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.raeffray.annotations.RawDataId;
 
 @JsonInclude(Include.NON_NULL)
+@RawDataId(identifier="agency_id")
 public class Agency implements RawData {
 	
 	@JsonProperty("agencyId")

@@ -27,6 +27,26 @@ public class CSVReaderTemplate {
                 final Map<String, String> line = record.toMap();
                 handler.processLine(line);
             }
+            handler.notifyEOF();
+        }
+    }
+    
+    /**
+     * Reads the CSV file calling the handler for each line. Closes the reader after reading the entire file or if an
+     * exception occurs.
+     *
+     * @param reader  reader pointing to the CSV file
+     * @param handler row handler
+     * @param idToSearch na id to be used as criteria
+     * @throws IOException exception while reading the file
+     */
+    public void read(final Reader reader, CSVRowHandler handler, String idToSearch) throws IOException {
+        try (final CSVParser records = CSVFormat.EXCEL.withHeader().withIgnoreSurroundingSpaces().parse(reader)) {
+            for (CSVRecord record : records) {
+                final Map<String, String> line = record.toMap();
+                handler.processLine(line,idToSearch);
+            }
+            handler.notifyEOF();
         }
     }
 }

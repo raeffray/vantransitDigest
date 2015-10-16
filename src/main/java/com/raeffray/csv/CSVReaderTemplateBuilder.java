@@ -43,6 +43,26 @@ public class CSVReaderTemplateBuilder<T> {
         }
         template.read(new InputStreamReader(stream), new InstanceConverter<>(clazz, handler));
     }
+    
+    /**
+     * Reads the CSV and calls the {@code handler}.
+     *
+     * @param handler handler to be called on each line read
+     * @param id to be used as criteria
+     * @throws IOException error reading the CSV file
+     */
+    public void processWith(InstanceHandler<? super T> handler, String idToSearch) throws IOException {
+        String csvPath = Configuration.getConfigurationForClass(clazz)
+                .getString("csv.path");
+
+        InputStream stream = getClass().getResourceAsStream(csvPath);
+        if (stream != null) {
+            stream = new BOMInputStream(stream);
+        } else {
+            stream = new BOMInputStream(new FileInputStream(csvPath));
+        }
+        template.read(new InputStreamReader(stream), new InstanceConverter<>(clazz, handler),idToSearch);
+    }
 
     private CSVReaderTemplateBuilder(final Class<T> clazz) {
         this.clazz = clazz;

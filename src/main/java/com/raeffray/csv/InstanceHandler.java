@@ -6,4 +6,5 @@ package com.raeffray.csv;
  */
 public interface InstanceHandler<T> {
     void processInstance(T instance);
+    void endProcess();
 }

@@ -41,4 +41,10 @@ public class BatchLoader implements InstanceHandler<RawData> {
     private String[] labelsFor(RawData instance) {
         return new String[]{instance.getClass().getSimpleName()};
     }
+
+	@Override
+	public void endProcess() {
+		// TODO Auto-generated method stub
+		
+	}
 }
